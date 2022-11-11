@@ -2,7 +2,7 @@
 // versions:
 // - protoc-gen-go-grpc v1.2.0
 // - protoc             v3.21.6
-// source: greetpb/greet.proto
+// source: greet/greetpb/greet.proto
 
 package greetpb
 
@@ -30,6 +30,8 @@ type GreetServiceClient interface {
 	Login(ctx context.Context, in *LoginRequest, opts ...grpc.CallOption) (*LoginResponse, error)
 	// for server streaming
 	ServerGreeting(ctx context.Context, in *GreetOneRequest, opts ...grpc.CallOption) (GreetService_ServerGreetingClient, error)
+	// for client streaming
+	ClientGreet(ctx context.Context, opts ...grpc.CallOption) (GreetService_ClientGreetClient, error)
 }
 
 type greetServiceClient struct {
@@ -99,6 +101,40 @@ func (x *greetServiceServerGreetingClient) Recv() (*GreetManyResponse, error) {
 	return m, nil
 }
 
+func (c *greetServiceClient) ClientGreet(ctx context.Context, opts ...grpc.CallOption) (GreetService_ClientGreetClient, error) {
+	stream, err := c.cc.NewStream(ctx, &GreetService_ServiceDesc.Streams[1], "/greet.GreetService/ClientGreet", opts...)
+	if err != nil {
+		return nil, err
+	}
+	x := &greetServiceClientGreetClient{stream}
+	return x, nil
+}
+
+type GreetService_ClientGreetClient interface {
+	Send(*GreetManyRequest) error
+	CloseAndRecv() (*GreetOneResponse, error)
+	grpc.ClientStream
+}
+
+type greetServiceClientGreetClient struct {
+	grpc.ClientStream
+}
+
+func (x *greetServiceClientGreetClient) Send(m *GreetManyRequest) error {
+	return x.ClientStream.SendMsg(m)
+}
+
+func (x *greetServiceClientGreetClient) CloseAndRecv() (*GreetOneResponse, error) {
+	if err := x.ClientStream.CloseSend(); err != nil {
+		return nil, err
+	}
+	m := new(GreetOneResponse)
+	if err := x.ClientStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
+}
+
 // GreetServiceServer is the server API for GreetService service.
 // All implementations must embed UnimplementedGreetServiceServer
 // for forward compatibility
@@ -111,6 +147,8 @@ type GreetServiceServer interface {
 	Login(context.Context, *LoginRequest) (*LoginResponse, error)
 	// for server streaming
 	ServerGreeting(*GreetOneRequest, GreetService_ServerGreetingServer) error
+	// for client streaming
+	ClientGreet(GreetService_ClientGreetServer) error
 	mustEmbedUnimplementedGreetServiceServer()
 }
 
@@ -129,6 +167,9 @@ func (UnimplementedGreetServiceServer) Login(context.Context, *LoginRequest) (*L
 }
 func (UnimplementedGreetServiceServer) ServerGreeting(*GreetOneRequest, GreetService_ServerGreetingServer) error {
 	return status.Errorf(codes.Unimplemented, "method ServerGreeting not implemented")
+}
+func (UnimplementedGreetServiceServer) ClientGreet(GreetService_ClientGreetServer) error {
+	return status.Errorf(codes.Unimplemented, "method ClientGreet not implemented")
 }
 func (UnimplementedGreetServiceServer) mustEmbedUnimplementedGreetServiceServer() {}
 
@@ -218,6 +259,32 @@ func (x *greetServiceServerGreetingServer) Send(m *GreetManyResponse) error {
 	return x.ServerStream.SendMsg(m)
 }
 
+func _GreetService_ClientGreet_Handler(srv interface{}, stream grpc.ServerStream) error {
+	return srv.(GreetServiceServer).ClientGreet(&greetServiceClientGreetServer{stream})
+}
+
+type GreetService_ClientGreetServer interface {
+	SendAndClose(*GreetOneResponse) error
+	Recv() (*GreetManyRequest, error)
+	grpc.ServerStream
+}
+
+type greetServiceClientGreetServer struct {
+	grpc.ServerStream
+}
+
+func (x *greetServiceClientGreetServer) SendAndClose(m *GreetOneResponse) error {
+	return x.ServerStream.SendMsg(m)
+}
+
+func (x *greetServiceClientGreetServer) Recv() (*GreetManyRequest, error) {
+	m := new(GreetManyRequest)
+	if err := x.ServerStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
+}
+
 // GreetService_ServiceDesc is the grpc.ServiceDesc for GreetService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -244,6 +311,11 @@ var GreetService_ServiceDesc = grpc.ServiceDesc{
 			Handler:       _GreetService_ServerGreeting_Handler,
 			ServerStreams: true,
 		},
+		{
+			StreamName:    "ClientGreet",
+			Handler:       _GreetService_ClientGreet_Handler,
+			ClientStreams: true,
+		},
 	},
-	Metadata: "greetpb/greet.proto",
+	Metadata: "greet/greetpb/greet.proto",
 }

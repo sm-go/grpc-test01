@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"io"
 	"log"
 	"net"
 	"time"
@@ -62,6 +63,27 @@ func (*server) ServerGreeting(req *greetpb.GreetOneRequest, stream greetpb.Greet
 		time.Sleep(time.Second * 2)
 	}
 	return nil
+}
+
+// client streaming
+func (*server) ClientGreet(stream greetpb.GreetService_ClientGreetServer) error {
+	fmt.Println("client steaming is starting")
+	result := "Hello "
+	for {
+		req, err := stream.Recv()
+		if err == io.EOF {
+			//we have finished reading the client stream
+			return stream.SendAndClose(&greetpb.GreetOneResponse{
+				Result: result,
+			})
+		}
+		if err != nil {
+			log.Fatalf("error while reading .. %v ", err)
+		}
+		firstName := req.GetManyreq().GetFirstName()
+		lastName := req.GetManyreq().GetLastName()
+		result += firstName + lastName
+	}
 }
 
 func main() {

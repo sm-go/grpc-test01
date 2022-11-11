@@ -40,6 +40,16 @@ message GreetManyResponse {
     string result = 1;
 }
 
+// for client streaming
+message GreetManyRequest {
+    Greeting manyreq = 1;
+}
+
+message GreetOneResponse {
+    string result = 1;
+}
+
+
 service GreetService {
     //for greet
     rpc Greet (GreetRequest) returns (GreetResponse);
@@ -52,4 +62,7 @@ service GreetService {
 
     // for server streaming
     rpc ServerGreeting (GreetOneRequest) returns (stream GreetManyResponse);
+
+    // for client streaming
+    rpc ClientGreet (stream GreetManyRequest) returns (GreetOneResponse);
 }
