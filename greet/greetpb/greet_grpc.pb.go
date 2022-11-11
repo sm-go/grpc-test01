@@ -2,7 +2,7 @@
 // versions:
 // - protoc-gen-go-grpc v1.2.0
 // - protoc             v3.21.6
-// source: greet/greetpb/greet.proto
+// source: greetpb/greet.proto
 
 package greetpb
 
@@ -28,6 +28,8 @@ type GreetServiceClient interface {
 	GreetAgain(ctx context.Context, in *GreetRequest, opts ...grpc.CallOption) (*GreetResponse, error)
 	// for login
 	Login(ctx context.Context, in *LoginRequest, opts ...grpc.CallOption) (*LoginResponse, error)
+	// for server streaming
+	ServerGreeting(ctx context.Context, in *GreetOneRequest, opts ...grpc.CallOption) (GreetService_ServerGreetingClient, error)
 }
 
 type greetServiceClient struct {
@@ -65,6 +67,38 @@ func (c *greetServiceClient) Login(ctx context.Context, in *LoginRequest, opts .
 	return out, nil
 }
 
+func (c *greetServiceClient) ServerGreeting(ctx context.Context, in *GreetOneRequest, opts ...grpc.CallOption) (GreetService_ServerGreetingClient, error) {
+	stream, err := c.cc.NewStream(ctx, &GreetService_ServiceDesc.Streams[0], "/greet.GreetService/ServerGreeting", opts...)
+	if err != nil {
+		return nil, err
+	}
+	x := &greetServiceServerGreetingClient{stream}
+	if err := x.ClientStream.SendMsg(in); err != nil {
+		return nil, err
+	}
+	if err := x.ClientStream.CloseSend(); err != nil {
+		return nil, err
+	}
+	return x, nil
+}
+
+type GreetService_ServerGreetingClient interface {
+	Recv() (*GreetManyResponse, error)
+	grpc.ClientStream
+}
+
+type greetServiceServerGreetingClient struct {
+	grpc.ClientStream
+}
+
+func (x *greetServiceServerGreetingClient) Recv() (*GreetManyResponse, error) {
+	m := new(GreetManyResponse)
+	if err := x.ClientStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
+}
+
 // GreetServiceServer is the server API for GreetService service.
 // All implementations must embed UnimplementedGreetServiceServer
 // for forward compatibility
@@ -75,6 +109,8 @@ type GreetServiceServer interface {
 	GreetAgain(context.Context, *GreetRequest) (*GreetResponse, error)
 	// for login
 	Login(context.Context, *LoginRequest) (*LoginResponse, error)
+	// for server streaming
+	ServerGreeting(*GreetOneRequest, GreetService_ServerGreetingServer) error
 	mustEmbedUnimplementedGreetServiceServer()
 }
 
@@ -90,6 +126,9 @@ func (UnimplementedGreetServiceServer) GreetAgain(context.Context, *GreetRequest
 }
 func (UnimplementedGreetServiceServer) Login(context.Context, *LoginRequest) (*LoginResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Login not implemented")
+}
+func (UnimplementedGreetServiceServer) ServerGreeting(*GreetOneRequest, GreetService_ServerGreetingServer) error {
+	return status.Errorf(codes.Unimplemented, "method ServerGreeting not implemented")
 }
 func (UnimplementedGreetServiceServer) mustEmbedUnimplementedGreetServiceServer() {}
 
@@ -158,6 +197,27 @@ func _GreetService_Login_Handler(srv interface{}, ctx context.Context, dec func(
 	return interceptor(ctx, in, info, handler)
 }
 
+func _GreetService_ServerGreeting_Handler(srv interface{}, stream grpc.ServerStream) error {
+	m := new(GreetOneRequest)
+	if err := stream.RecvMsg(m); err != nil {
+		return err
+	}
+	return srv.(GreetServiceServer).ServerGreeting(m, &greetServiceServerGreetingServer{stream})
+}
+
+type GreetService_ServerGreetingServer interface {
+	Send(*GreetManyResponse) error
+	grpc.ServerStream
+}
+
+type greetServiceServerGreetingServer struct {
+	grpc.ServerStream
+}
+
+func (x *greetServiceServerGreetingServer) Send(m *GreetManyResponse) error {
+	return x.ServerStream.SendMsg(m)
+}
+
 // GreetService_ServiceDesc is the grpc.ServiceDesc for GreetService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -178,6 +238,12 @@ var GreetService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _GreetService_Login_Handler,
 		},
 	},
-	Streams:  []grpc.StreamDesc{},
-	Metadata: "greet/greetpb/greet.proto",
+	Streams: []grpc.StreamDesc{
+		{
+			StreamName:    "ServerGreeting",
+			Handler:       _GreetService_ServerGreeting_Handler,
+			ServerStreams: true,
+		},
+	},
+	Metadata: "greetpb/greet.proto",
 }

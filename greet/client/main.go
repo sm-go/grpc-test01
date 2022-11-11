@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"io"
 	"log"
 
 	"github.com/smith-golang/grpc-test01/greet/greetpb"
@@ -26,6 +27,7 @@ func main() {
 	doGreeting(c)
 	greetAgain(c)
 	doLogin(c)
+	doServerStreaming(c)
 
 	defer conn.Close()
 }
@@ -73,4 +75,28 @@ func doLogin(c greetpb.GreetServiceClient) {
 		log.Fatalf("err while calling greet grpc %v", err)
 	}
 	log.Printf("Response from Greet : %v", res.Result)
+}
+
+func doServerStreaming(c greetpb.GreetServiceClient) {
+	fmt.Println("Starting do server streaming from client")
+	req := &greetpb.GreetOneRequest{
+		Onereq: &greetpb.Greeting{
+			FirstName: "Strange",
+			LastName:  "Go",
+		},
+	}
+	resStream, err := c.ServerGreeting(context.Background(), req)
+	if err != nil {
+		log.Fatalf("err while calling from server %v", err)
+	}
+	for {
+		msg, err := resStream.Recv()
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			log.Fatalf("error while reading streaming %v", err)
+		}
+		log.Printf("Response from %v", msg.GetResult())
+	}
 }

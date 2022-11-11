@@ -31,7 +31,14 @@ message LoginResponse {
     string result = 1;
 }
 
-// for 
+// for server streaming
+message GreetOneRequest {
+    Greeting onereq = 1;
+}
+
+message GreetManyResponse {
+    string result = 1;
+}
 
 service GreetService {
     //for greet
@@ -42,4 +49,7 @@ service GreetService {
 
     //for login
     rpc Login (LoginRequest) returns (LoginResponse);
+
+    // for server streaming
+    rpc ServerGreeting (GreetOneRequest) returns (stream GreetManyResponse);
 }
