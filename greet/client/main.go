@@ -24,6 +24,7 @@ func main() {
 	c := greetpb.NewGreetServiceClient(conn)
 
 	doGreeting(c)
+	greetAgain(c)
 	doLogin(c)
 
 	defer conn.Close()
@@ -42,6 +43,21 @@ func doGreeting(c greetpb.GreetServiceClient) {
 		log.Fatalf("Error while calling Greet RPC %v", err)
 	}
 	log.Printf("Response from Greet : %v", res.Result)
+}
+
+func greetAgain(c greetpb.GreetServiceClient) {
+	fmt.Printf("starting greetagain g_RPC Service")
+	req := &greetpb.GreetRequest{
+		Greetreq: &greetpb.Greeting{
+			FirstName: "John",
+			LastName:  "Doe",
+		},
+	}
+	res, err := c.GreetAgain(context.Background(), req)
+	if err != nil {
+		log.Fatalf("error while calling greet RPC %v", err)
+	}
+	log.Printf("Response from Greet %v", res)
 }
 
 func doLogin(c greetpb.GreetServiceClient) {

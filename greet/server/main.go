@@ -25,6 +25,17 @@ func (*server) Greet(ctx context.Context, req *greetpb.GreetRequest) (*greetpb.G
 	return res, nil
 }
 
+func (*server) GreetAgain(ctx context.Context, req *greetpb.GreetRequest) (*greetpb.GreetResponse, error) {
+	fmt.Printf("greet again function was invoked %v", req)
+	fName := req.GetGreetreq().FirstName
+	lName := req.GetGreetreq().LastName
+	result := fName + lName
+	res := &greetpb.GreetResponse{
+		Result: result,
+	}
+	return res, nil
+}
+
 func (*server) Login(ctx context.Context, req *greetpb.LoginRequest) (*greetpb.LoginResponse, error) {
 	fmt.Printf("login functions was invoked with %v", req)
 	username := req.GetLoginreq().GetUsername()

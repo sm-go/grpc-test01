@@ -31,9 +31,14 @@ message LoginResponse {
     string result = 1;
 }
 
+// for 
+
 service GreetService {
     //for greet
     rpc Greet (GreetRequest) returns (GreetResponse);
+
+    //for greet again
+    rpc GreetAgain (GreetRequest) returns (GreetResponse);
 
     //for login
     rpc Login (LoginRequest) returns (LoginResponse);
