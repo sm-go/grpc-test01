@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"net"
+	"time"
 
 	calculatorpb "github.com/smith-golang/grpc-test01/calculator/pb"
 	"google.golang.org/grpc"
@@ -23,6 +24,22 @@ func (*server) Sum(ctx context.Context, req *calculatorpb.SumRequest) (*calculat
 		SumResult: sum,
 	}
 	return res, nil
+}
+
+// for server steaming
+func (*server) SumStreaming(req *calculatorpb.SumOneRequest, stream calculatorpb.CalculatorService_SumStreamingServer) error {
+	firstnumber := req.FirstNumber
+	lastnumber := req.LastNumber
+	count := 10
+	for i := 0; i < count; i++ {
+		result := firstnumber + lastnumber
+		res := &calculatorpb.SumManyResponse{
+			SumResult: result,
+		}
+		stream.Send(res)
+		time.Sleep(time.Second * 1)
+	}
+	return nil
 }
 
 func main() {

@@ -24,6 +24,8 @@ const _ = grpc.SupportPackageIsVersion7
 type CalculatorServiceClient interface {
 	// for sum
 	Sum(ctx context.Context, in *SumRequest, opts ...grpc.CallOption) (*SumResponse, error)
+	// for server streaming
+	SumStreaming(ctx context.Context, in *SumOneRequest, opts ...grpc.CallOption) (CalculatorService_SumStreamingClient, error)
 }
 
 type calculatorServiceClient struct {
@@ -43,12 +45,46 @@ func (c *calculatorServiceClient) Sum(ctx context.Context, in *SumRequest, opts 
 	return out, nil
 }
 
+func (c *calculatorServiceClient) SumStreaming(ctx context.Context, in *SumOneRequest, opts ...grpc.CallOption) (CalculatorService_SumStreamingClient, error) {
+	stream, err := c.cc.NewStream(ctx, &CalculatorService_ServiceDesc.Streams[0], "/calculator.CalculatorService/SumStreaming", opts...)
+	if err != nil {
+		return nil, err
+	}
+	x := &calculatorServiceSumStreamingClient{stream}
+	if err := x.ClientStream.SendMsg(in); err != nil {
+		return nil, err
+	}
+	if err := x.ClientStream.CloseSend(); err != nil {
+		return nil, err
+	}
+	return x, nil
+}
+
+type CalculatorService_SumStreamingClient interface {
+	Recv() (*SumManyResponse, error)
+	grpc.ClientStream
+}
+
+type calculatorServiceSumStreamingClient struct {
+	grpc.ClientStream
+}
+
+func (x *calculatorServiceSumStreamingClient) Recv() (*SumManyResponse, error) {
+	m := new(SumManyResponse)
+	if err := x.ClientStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
+}
+
 // CalculatorServiceServer is the server API for CalculatorService service.
 // All implementations must embed UnimplementedCalculatorServiceServer
 // for forward compatibility
 type CalculatorServiceServer interface {
 	// for sum
 	Sum(context.Context, *SumRequest) (*SumResponse, error)
+	// for server streaming
+	SumStreaming(*SumOneRequest, CalculatorService_SumStreamingServer) error
 	mustEmbedUnimplementedCalculatorServiceServer()
 }
 
@@ -58,6 +94,9 @@ type UnimplementedCalculatorServiceServer struct {
 
 func (UnimplementedCalculatorServiceServer) Sum(context.Context, *SumRequest) (*SumResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Sum not implemented")
+}
+func (UnimplementedCalculatorServiceServer) SumStreaming(*SumOneRequest, CalculatorService_SumStreamingServer) error {
+	return status.Errorf(codes.Unimplemented, "method SumStreaming not implemented")
 }
 func (UnimplementedCalculatorServiceServer) mustEmbedUnimplementedCalculatorServiceServer() {}
 
@@ -90,6 +129,27 @@ func _CalculatorService_Sum_Handler(srv interface{}, ctx context.Context, dec fu
 	return interceptor(ctx, in, info, handler)
 }
 
+func _CalculatorService_SumStreaming_Handler(srv interface{}, stream grpc.ServerStream) error {
+	m := new(SumOneRequest)
+	if err := stream.RecvMsg(m); err != nil {
+		return err
+	}
+	return srv.(CalculatorServiceServer).SumStreaming(m, &calculatorServiceSumStreamingServer{stream})
+}
+
+type CalculatorService_SumStreamingServer interface {
+	Send(*SumManyResponse) error
+	grpc.ServerStream
+}
+
+type calculatorServiceSumStreamingServer struct {
+	grpc.ServerStream
+}
+
+func (x *calculatorServiceSumStreamingServer) Send(m *SumManyResponse) error {
+	return x.ServerStream.SendMsg(m)
+}
+
 // CalculatorService_ServiceDesc is the grpc.ServiceDesc for CalculatorService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -102,6 +162,12 @@ var CalculatorService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _CalculatorService_Sum_Handler,
 		},
 	},
-	Streams:  []grpc.StreamDesc{},
+	Streams: []grpc.StreamDesc{
+		{
+			StreamName:    "SumStreaming",
+			Handler:       _CalculatorService_SumStreaming_Handler,
+			ServerStreams: true,
+		},
+	},
 	Metadata: "calculator/pb/calculator.proto",
 }

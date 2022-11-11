@@ -13,7 +13,21 @@ message SumResponse {
     int32 sum_result = 1;
 }
 
+// for server streaming
+
+message SumOneRequest {
+    int32 first_number = 1;
+    int32 last_number = 2;
+}
+
+message SumManyResponse {
+    int32 sum_result = 1;
+}
+
 service CalculatorService {
     //for sum
     rpc Sum (SumRequest) returns (SumResponse);
+
+    //for server streaming
+    rpc SumStreaming (SumOneRequest) returns (stream SumManyResponse);
 }
