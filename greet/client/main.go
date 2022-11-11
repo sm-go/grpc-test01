@@ -57,7 +57,7 @@ func greetAgain(c greetpb.GreetServiceClient) {
 	if err != nil {
 		log.Fatalf("error while calling greet RPC %v", err)
 	}
-	log.Printf("Response from Greet %v", res)
+	log.Printf("Response from Greet Again :%v", res.Result)
 }
 
 func doLogin(c greetpb.GreetServiceClient) {
