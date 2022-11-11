@@ -32,6 +32,7 @@ func doCalculate(c calculatorpb.CalculatorServiceClient) {
 		FirstNumber:  3,
 		SecondNumber: 4,
 	}
+	//from proto service => server => client
 	res, err := c.Sum(context.Background(), req)
 	if err != nil {
 		log.Fatalf("error while calling %v", err)

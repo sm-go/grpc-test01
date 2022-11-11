@@ -14,12 +14,13 @@ type server struct {
 	calculatorpb.UnimplementedCalculatorServiceServer
 }
 
+// from proto service
 func (*server) Sum(ctx context.Context, req *calculatorpb.SumRequest) (*calculatorpb.SumResponse, error) {
 	firstNumner := req.GetFirstNumber()
 	secondNumber := req.GetSecondNumber()
-	result := firstNumner + secondNumber
+	sum := firstNumner + secondNumber
 	res := &calculatorpb.SumResponse{
-		SumResult: result,
+		SumResult: sum,
 	}
 	return res, nil
 }
