@@ -49,6 +49,7 @@ func (*server) Login(ctx context.Context, req *greetpb.LoginRequest) (*greetpb.L
 	return res, nil
 }
 
+// server streaming
 func (*server) ServerGreeting(req *greetpb.GreetOneRequest, stream greetpb.GreetService_ServerGreetingServer) error {
 	fmt.Printf("server steaming is starting %v", req)
 	firstname := req.GetOnereq().GetFirstName()
@@ -83,6 +84,33 @@ func (*server) ClientGreet(stream greetpb.GreetService_ClientGreetServer) error 
 		firstName := req.GetManyreq().GetFirstName()
 		lastName := req.GetManyreq().GetLastName()
 		result += firstName + lastName
+	}
+}
+
+// bi-directional streaming
+func (*server) GreetEveryone(stream greetpb.GreetService_GreetEveryoneServer) error {
+	fmt.Println("bi-directional steaming is starting ")
+
+	for {
+		req, err := stream.Recv()
+		if err == io.EOF {
+			return nil
+		}
+		if err != nil {
+			log.Fatalf("Error while reading client streaming %v", err)
+			return err
+		}
+		firstName := req.GetGreetmany().GetFirstName()
+		lastName := req.GetGreetmany().GetLastName()
+		result := "hello " + firstName + lastName
+
+		sendErr := stream.Send(&greetpb.GreetEveryoneResponse{
+			Greetmany: result,
+		})
+		if sendErr != nil {
+			log.Fatalf("error while sending data to client %v", err)
+			return err
+		}
 	}
 }
 

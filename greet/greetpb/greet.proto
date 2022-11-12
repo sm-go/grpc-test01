@@ -49,6 +49,15 @@ message GreetOneResponse {
     string result = 1;
 }
 
+// for bi-directional atreaming
+message GreetEveryoneRequest {
+    Greeting greetmany = 1;
+}
+
+message GreetEveryoneResponse {
+    string greetmany = 1; 
+}
+
 
 service GreetService {
     //for greet
@@ -65,4 +74,7 @@ service GreetService {
 
     // for client streaming
     rpc ClientGreet (stream GreetManyRequest) returns (GreetOneResponse);
+
+    // bi-directional streaming
+    rpc GreetEveryone (stream GreetEveryoneRequest) returns (stream GreetEveryoneResponse);
 }
