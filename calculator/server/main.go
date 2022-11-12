@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"io"
 	"log"
 	"net"
 	"time"
@@ -40,6 +41,27 @@ func (*server) SumStreaming(req *calculatorpb.SumOneRequest, stream calculatorpb
 		time.Sleep(time.Second * 1)
 	}
 	return nil
+}
+
+// for client streaming
+func (*server) SumCStreaming(stream calculatorpb.CalculatorService_SumCStreamingServer) error {
+	fmt.Println("client streaming is starting")
+	var result int32
+	for {
+		req, err := stream.Recv()
+		if err == io.EOF {
+			//we have finished the client streaming
+			return stream.SendAndClose(&calculatorpb.SumOneResponse{
+				SumResult: result,
+			})
+		}
+		if err != nil {
+			log.Fatalf("error while reading %v", err)
+		}
+		firstNumber := req.GetFirstNumber()
+		lastNumber := req.GetLastNumber()
+		result += firstNumber + lastNumber
+	}
 }
 
 func main() {
