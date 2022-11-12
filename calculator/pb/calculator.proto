@@ -34,6 +34,15 @@ message SumOneResponse {
     int32 sum_result = 1;
 }
 
+// for average client streaming
+message AverageRequest {
+    int32 number = 1;
+}
+
+message AverageResponse {
+    double average = 1;
+}
+
 service CalculatorService {
     //for sum
     rpc Sum (SumRequest) returns (SumResponse);
@@ -43,4 +52,6 @@ service CalculatorService {
 
     // for client streaming
     rpc SumCStreaming (stream SumManyRequest) returns (SumOneResponse);
+    // for average streaming
+    rpc AverageService (stream AverageRequest) returns (AverageResponse);
 }

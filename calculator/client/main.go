@@ -27,6 +27,7 @@ func main() {
 	doCalculate(c)
 	doCalculateStreaming(c)
 	doCalculatorClientStreaming(c)
+	doAverageClientStreaming(c)
 
 	defer conn.Close()
 }
@@ -104,5 +105,25 @@ func doCalculatorClientStreaming(c calculatorpb.CalculatorServiceClient) {
 	if err != nil {
 		log.Fatalf("error while receiving response %v", err)
 	}
-	fmt.Printf("client calculator result are %v", res)
+	fmt.Printf("client calculator result are %v \n", res)
+}
+func doAverageClientStreaming(c calculatorpb.CalculatorServiceClient) {
+	fmt.Println("average streaming is starting")
+	stream, err := c.AverageService(context.Background())
+	if err != nil {
+		log.Fatalf("error while reading streaming %v", err)
+	}
+	numbers := []int32{2, 3, 4, 5, 56, 6, 67, 78, 8, 9}
+
+	for _, number := range numbers {
+		stream.Send(&calculatorpb.AverageRequest{
+			Number: number,
+		})
+	}
+	res, err := stream.CloseAndRecv()
+	if err != nil {
+		log.Fatalf("Error while receiving response %v", err)
+	}
+
+	fmt.Printf("average is  %v", res.GetAverage())
 }

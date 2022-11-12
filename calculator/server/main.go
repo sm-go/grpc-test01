@@ -64,6 +64,28 @@ func (*server) SumCStreaming(stream calculatorpb.CalculatorService_SumCStreaming
 	}
 }
 
+// for average streaming
+func (*server) AverageService(stream calculatorpb.CalculatorService_AverageServiceServer) error {
+	fmt.Println("average client streaming is starting")
+	var count int32
+	var sum int32
+	for {
+		req, err := stream.Recv()
+		if err == io.EOF {
+			//
+			average := float64(sum) / float64(count)
+			return stream.SendAndClose(&calculatorpb.AverageResponse{
+				Average: average,
+			})
+		}
+		if err != nil {
+			log.Fatalf("error while reading client streaming : %v", err)
+		}
+		sum += req.GetNumber()
+		count++
+	}
+}
+
 func main() {
 	fmt.Println("hello calculator server")
 	list, err := net.Listen("tcp", "localhost:10010")
